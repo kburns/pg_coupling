@@ -44,7 +44,7 @@ p0['g'][:] = p_bvp['g'][slices[1]]
 
 # Adiabatic viscous fully-compressible hydrodynamics
 problem = de.IVP(domain, variables=['a1','p1','u','w','uz','wz'], ncc_cutoff=param.ncc_cutoff)
-problem.meta['w']['z']['dirichlet'] = True
+problem.meta[:]['z']['dirichlet'] = True
 problem.parameters['a0'] = a0
 problem.parameters['p0'] = p0
 problem.parameters['a0z'] = a0.differentiate('z')
@@ -71,8 +71,8 @@ problem.add_equation("dt(a1) + u*a0x + w*a0z -   a0*div_u = - (u*dx(a1) + w*dz(a
 problem.add_equation("dt(p1) + u*p0x + w*p0z + γ*p0*div_u = - (u*dx(p1) + w*dz(p1)) - γ*p1*div_u")
 problem.add_equation("uz - dz(u) = 0")
 problem.add_equation("wz - dz(w) = 0")
-problem.add_bc("left(uz) = 0")
-problem.add_bc("right(uz) = 0")
+problem.add_bc("left(txz) = 0")
+problem.add_bc("right(txz) = 0")
 problem.add_bc("left(w) = 0")
 problem.add_bc("right(w) = 0")
 
@@ -93,12 +93,23 @@ else:
 # Checkpoints
 an0 = solver.evaluator.add_file_handler('snapshots_grid', sim_dt=param.snapshot_sim_dt, max_writes=10)
 an0.add_system(solver.state, layout='g')
+an0.add_task('p0+p1', name='p', layout='g')
+an0.add_task('a0+a1', name='a', layout='g')
+an0.add_task('(a0+a1)**(-1)', name='ρ', layout='g')
 an1 = solver.evaluator.add_file_handler('snapshots_coeff', sim_dt=param.snapshot_sim_dt, max_writes=10)
 an1.add_system(solver.state, layout='c')
+an1.add_task('p0+p1', name='p', layout='c')
+an1.add_task('a0+a1', name='a', layout='c')
+an1.add_task('(a0+a1)**(-1)', name='ρ', layout='c')
 
 # CFL calculator
 CFL = flow_tools.CFL(solver, **param.CFL)
 CFL.add_velocities(('u', 'w'))
+
+# Flow properties
+flow = flow_tools.GlobalFlowProperty(solver, cadence=param.CFL['cadence'])
+flow.add_property("integ(u/(a0+a1))/integ(1/(a0+a1))", name='Ux')
+flow.add_property("integ(w/(a0+a1))/integ(1/(a0+a1))", name='Uz')
 
 # Main loop
 dt_floor = 2**(np.log2(param.CFL['min_dt'])//1)
@@ -106,11 +117,14 @@ try:
     logger.info('Starting loop')
     start_time = time.time()
     while solver.ok:
-        dt = CFL.compute_dt()
-        dt = dt_floor * (dt // dt_floor)
+        # dt = CFL.compute_dt()
+        # dt = dt_floor * (dt // dt_floor)
+        dt = 0.125 
         dt = solver.step(dt, trim=True)
         if (solver.iteration-1) % param.CFL['cadence'] == 0:
             logger.info('Iteration: %i, Time: %e, dt: %e' %(solver.iteration, solver.sim_time, dt))
+            logger.info('Ux = %f' %flow.max('Ux'))
+            logger.info('Uz = %f' %flow.max('Uz'))
 except:
     logger.error('Exception raised, triggering end of main loop.')
     logger.error('Final timestep: %f' %dt)
