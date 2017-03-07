@@ -30,10 +30,10 @@ def N2_func(z):
     return N2_amp * np.exp(-zc**2/2)
 
 # Tide
-U = 0
 A_tide = 1e-1
 k_tide = 2 * np.pi / (Lx/2)
-omega_tide = 0.5
+omega_tide = 0
+U = - 0.5 / k_tide
 
 # Stopping
 stop_sim_time = 200.0
