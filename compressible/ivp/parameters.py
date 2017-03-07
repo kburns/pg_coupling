@@ -17,7 +17,7 @@ Lz = 2
 Lx = 4
 z_res = 128
 x_res = 32
-ncc_cutoff = 1e-6
+ncc_cutoff = 1e-3
 
 # Cavity
 cav_center = Lz / 2
@@ -30,6 +30,7 @@ def N2_func(z):
     return N2_amp * np.exp(-zc**2/2)
 
 # Tide
+U = 0
 A_tide = 1e-1
 k_tide = 2 * np.pi / (Lx/2)
 omega_tide = 0.5

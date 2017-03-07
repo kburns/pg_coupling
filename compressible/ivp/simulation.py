@@ -51,6 +51,7 @@ problem.parameters['a0z'] = a0.differentiate('z')
 problem.parameters['p0z'] = p0.differentiate('z')
 problem.parameters['a0x'] = 0#a0.differentiate('x')
 problem.parameters['p0x'] = 0#p0.differentiate('x')
+problem.parameters['U'] = param.U
 problem.parameters['μ'] = param.mu
 problem.parameters['γ'] = param.gamma
 problem.parameters['k'] = param.k_tide
@@ -65,10 +66,10 @@ problem.substitutions['txz'] = "μ*(wx + uz)"
 problem.substitutions['tzz'] = "μ*(2*wz - 2/3*div_u)"
 problem.substitutions['φ'] = "A*cos(k*x - ω*t)*exp(k*(z - Lz))"
 problem.substitutions['cs20'] = "γ*p0*a0"
-problem.add_equation("dt(u) + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - (u*ux + w*uz) - a1*dx(p1) + a1*(dx(txx) + dz(txz)) - dx(φ)")
-problem.add_equation("dt(w) + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - (u*wx + w*wz) - a1*dz(p1) + a1*(dx(txz) + dz(tzz)) - dz(φ)")
-problem.add_equation("dt(a1) + u*a0x + w*a0z -   a0*div_u = - (u*dx(a1) + w*dz(a1)) +   a1*div_u")
-problem.add_equation("dt(p1) + u*p0x + w*p0z + γ*p0*div_u = - (u*dx(p1) + w*dz(p1)) - γ*p1*div_u")
+problem.add_equation("dt(u) + U*ux + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - (u*ux + w*uz) - a1*dx(p1) + a1*(dx(txx) + dz(txz)) - dx(φ)")
+problem.add_equation("dt(w) + U*wx + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - (u*wx + w*wz) - a1*dz(p1) + a1*(dx(txz) + dz(tzz)) - dz(φ)")
+problem.add_equation("dt(a1) + U*dx(a1) + u*a0x + w*a0z -   a0*div_u = - (U*a0x + u*dx(a1) + w*dz(a1)) +   a1*div_u")
+problem.add_equation("dt(p1) + U*dx(p1) + u*p0x + w*p0z + γ*p0*div_u = - (U*p0x + u*dx(p1) + w*dz(p1)) - γ*p1*div_u")
 problem.add_equation("uz - dz(u) = 0")
 problem.add_equation("wz - dz(w) = 0")
 problem.add_bc("left(txz) = 0")
@@ -106,25 +107,17 @@ an1.add_task('(a0+a1)**(-1)', name='ρ', layout='c')
 CFL = flow_tools.CFL(solver, **param.CFL)
 CFL.add_velocities(('u', 'w'))
 
-# Flow properties
-flow = flow_tools.GlobalFlowProperty(solver, cadence=param.CFL['cadence'])
-flow.add_property("integ(u/(a0+a1))/integ(1/(a0+a1))", name='Ux')
-flow.add_property("integ(w/(a0+a1))/integ(1/(a0+a1))", name='Uz')
-
 # Main loop
 dt_floor = 2**(np.log2(param.CFL['min_dt'])//1)
 try:
     logger.info('Starting loop')
     start_time = time.time()
     while solver.ok:
-        # dt = CFL.compute_dt()
-        # dt = dt_floor * (dt // dt_floor)
-        dt = 0.125 
+        dt = CFL.compute_dt()
+        dt = dt_floor * (dt // dt_floor)
         dt = solver.step(dt, trim=True)
         if (solver.iteration-1) % param.CFL['cadence'] == 0:
             logger.info('Iteration: %i, Time: %e, dt: %e' %(solver.iteration, solver.sim_time, dt))
-            logger.info('Ux = %f' %flow.max('Ux'))
-            logger.info('Uz = %f' %flow.max('Uz'))
 except:
     logger.error('Exception raised, triggering end of main loop.')
     logger.error('Final timestep: %f' %dt)
