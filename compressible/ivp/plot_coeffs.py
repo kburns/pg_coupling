@@ -49,7 +49,7 @@ def main(filename, start, count, output):
                 axes = mfig.add_axes(i, j, [0, 0, 1, 1])
                 # Call 3D plotting helper, slicing in time
                 dset = file['tasks'][task]
-                plot_tools.plot_bot_3d(dset, 0, index, axes=axes, title=task, func=logmag)
+                plot_tools.plot_bot_3d(dset, 0, index, axes=axes, title=task, func=logmag, clim=(-15, 0), cmap='viridis')
             # Add time title
             title = title_func(file['scales/sim_time'][index])
             title_height = 1 - 0.5 * mfig.margin.top / mfig.fig.y
