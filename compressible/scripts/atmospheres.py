@@ -17,6 +17,7 @@ Notation:
 import numpy as np
 import scipy.integrate as integ
 import dedalus.public as de
+import mpi4py.MPI as MPI
 import logging
 logger = logging.getLogger(__name__)
 
@@ -76,3 +77,37 @@ def solve_dedalus(X0, P, domain, tolerance=1e-10, **bvp_kw):
     pz = solver.state['pz']
     return p, pz
 
+def solve_hydrostatic_pressure(param, dtype):
+    """Build domain and solve hydrostatic pressure from parameters."""
+    # NLBVP domain
+    z_basis = de.Chebyshev('z', param.z_res, interval=(0, param.Lz), dealias=2)
+    domain = de.Domain([z_basis], grid_dtype=dtype, comm=MPI.COMM_SELF)
+    # Solve NLBVP for background
+    X0 = np.array([param.p_bottom, -param.ρ_bottom*param.g])
+    P = (param.N2_func, param.g, param.γ)
+    p_bvp, pz_bvp = solve_dedalus(X0, P, domain, tolerance=param.nlbvp_tolerance, ncc_cutoff=param.nlbvp_cutoff, max_ncc_terms=param.nlbvp_max_terms)
+    return domain, p_bvp
+
+def truncate_background(param, p_full):
+    """Truncate background fields."""
+    # Filter pressure
+    p = p_full.domain.new_field()
+    p['c'] = p_full['c']
+    p['c'][np.abs(p['c']) < param.pressure_floor] = 0
+    # Construct new density
+    g, γ = param.g, param.γ
+    pz = p.differentiate('z')
+    a_full = ((-g)/pz).evaluate()
+    # Filter density
+    a = a_full.domain.new_field()
+    a['c'] = a_full['c']
+    a['c'][np.abs(a['c']) < param.background_floor] = 0
+    # Compute hydrostatic balance
+    heq = (a*pz + g).evaluate()
+    # Compute buoyancy frequency
+    az = a.differentiate('z')
+    N2 = (g*(az/a + (1/γ)*pz/p)).evaluate()
+    # Re-zero high modes
+    p['c'][np.abs(p['c']) < param.pressure_floor] = 0
+    a['c'][np.abs(a['c']) < param.background_floor] = 0
+    return p_full, p, a_full, a, heq, N2

@@ -17,15 +17,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# BVP domain
-z_basis = de.Chebyshev('z', param.z_res, interval=(0, param.Lz), dealias=3/2)
-domain = de.Domain([z_basis], grid_dtype=np.float64, comm=MPI.COMM_SELF)
-
-# Solve BVP for background
-X0 = np.array([param.p_bottom, -param.rho_bottom*param.g])
-P = (param.N2_func, param.g, param.gamma)
-p_bvp, pz_bvp = atmos.solve_dedalus(X0, P, domain, ncc_cutoff=param.ncc_cutoff)
-
+# Solve background
+domain, p_bvp = atmos.solve_hydrostatic_pressure(param, np.float64)
+p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_bvp)
 np.seterr(all='raise')
 
 # IVP domain
@@ -36,24 +30,29 @@ domain = de.Domain([x_basis, z_basis], grid_dtype=np.float64)
 # Background state
 a0 = domain.new_field()
 p0 = domain.new_field()
+a0.set_scales(1)
+p0.set_scales(1)
 slices = domain.dist.grid_layout.slices(scales=1)
 a0.meta['x']['constant'] = True
 p0.meta['x']['constant'] = True
-a0['g'][:] = 1 / (- pz_bvp['g'][slices[1]] / param.g)
-p0['g'][:] = p_bvp['g'][slices[1]]
+a_trunc.set_scales(1)
+p_trunc.set_scales(1)
+a0['g'][:] = a_trunc['g'][slices[1]]
+p0['g'][:] = p_trunc['g'][slices[1]]
 
 # Adiabatic viscous fully-compressible hydrodynamics
-problem = de.IVP(domain, variables=['a1','p1','u','w','uz','wz'], ncc_cutoff=param.ncc_cutoff)
+problem = de.IVP(domain, variables=['a1','p1','u','w','uz','wz'],
+    ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
 problem.meta[:]['z']['dirichlet'] = True
 problem.parameters['a0'] = a0
 problem.parameters['p0'] = p0
 problem.parameters['a0z'] = a0.differentiate('z')
 problem.parameters['p0z'] = p0.differentiate('z')
-problem.parameters['a0x'] = 0#a0.differentiate('x')
-problem.parameters['p0x'] = 0#p0.differentiate('x')
+problem.substitutions['a0x'] = '0' #a0.differentiate('x')
+problem.substitutions['p0x'] = '0' #p0.differentiate('x')
 problem.parameters['U'] = param.U
 problem.parameters['μ'] = param.mu
-problem.parameters['γ'] = param.gamma
+problem.parameters['γ'] = param.γ
 problem.parameters['k'] = param.k_tide
 problem.parameters['ω'] = param.omega_tide
 problem.parameters['A'] = param.A_tide
