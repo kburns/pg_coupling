@@ -10,13 +10,13 @@ import dedalus.public as de
 g = 1
 p_bottom = 1
 ρ_bottom = 1
-mu = 1e-5
+μ = 1e-4
 
 # Domain
 Lz = 2
 Lx = 4
-z_res = 128
-x_res = 32
+Nz = 256
+Nx = 64
 
 # Tolerances
 nlbvp_cutoff = 1e-9
@@ -25,7 +25,7 @@ nlbvp_tolerance = 1e-9
 pressure_floor = 1e-12
 background_floor = 1e-9
 ivp_cutoff = 1e-9
-matrix_cutoff = 1e-12
+matrix_cutoff = 1e-11
 
 # Cavity
 cav_center = Lz / 2
@@ -40,9 +40,12 @@ def N2_func(z):
 # Tide
 A_tide = 1e-10
 k_tide = 2 * np.pi / (Lx/2)
-omega_tide_rest = 0.05
-omega_tide = 0
-U = - omega_tide_rest / k_tide
+ω_tide = 0.05
+σ_tide = 0
+
+# Boost to tidal frame
+U = - ω_tide / k_tide
+ω_tide = 0
 
 # Stopping
 stop_sim_time = 10000.0

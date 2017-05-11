@@ -80,7 +80,7 @@ def solve_dedalus(X0, P, domain, tolerance=1e-10, **bvp_kw):
 def solve_hydrostatic_pressure(param, dtype):
     """Build domain and solve hydrostatic pressure from parameters."""
     # NLBVP domain
-    z_basis = de.Chebyshev('z', param.z_res, interval=(0, param.Lz), dealias=2)
+    z_basis = de.Chebyshev('z', param.Nz, interval=(0, param.Lz), dealias=2)
     domain = de.Domain([z_basis], grid_dtype=dtype, comm=MPI.COMM_SELF)
     # Solve NLBVP for background
     X0 = np.array([param.p_bottom, -param.ρ_bottom*param.g])

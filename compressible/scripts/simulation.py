@@ -23,8 +23,8 @@ p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_b
 np.seterr(all='raise')
 
 # IVP domain
-x_basis = de.Fourier('x', param.x_res, interval=(0, param.Lx), dealias=3/2)
-z_basis = de.Chebyshev('z', param.z_res, interval=(0, param.Lz), dealias=3/2)
+x_basis = de.Fourier('x', param.Nx, interval=(0, param.Lx), dealias=3/2)
+z_basis = de.Chebyshev('z', param.Nz, interval=(0, param.Lz), dealias=3/2)
 domain = de.Domain([x_basis, z_basis], grid_dtype=np.float64)
 
 # Background state
@@ -51,10 +51,11 @@ problem.parameters['p0z'] = p0.differentiate('z')
 problem.substitutions['a0x'] = '0' #a0.differentiate('x')
 problem.substitutions['p0x'] = '0' #p0.differentiate('x')
 problem.parameters['U'] = param.U
-problem.parameters['μ'] = param.mu
+problem.parameters['μ'] = param.μ
 problem.parameters['γ'] = param.γ
 problem.parameters['k'] = param.k_tide
-problem.parameters['ω'] = param.omega_tide
+problem.parameters['ω'] = param.ω_tide
+problem.parameters['σ'] = param.σ_tide
 problem.parameters['A'] = param.A_tide
 problem.parameters['Lz'] = param.Lz
 problem.substitutions['ux'] = "dx(u)"
@@ -63,7 +64,7 @@ problem.substitutions['div_u'] = "ux + wz"
 problem.substitutions['txx'] = "μ*(2*ux - 2/3*div_u)"
 problem.substitutions['txz'] = "μ*(wx + uz)"
 problem.substitutions['tzz'] = "μ*(2*wz - 2/3*div_u)"
-problem.substitutions['φ'] = "A*cos(k*x - ω*t)*exp(k*(z - Lz))"
+problem.substitutions['φ'] = "A*exp(σ*t)*cos(k*x - ω*t)*exp(k*(z - Lz))"
 problem.substitutions['cs20'] = "γ*p0*a0"
 problem.add_equation("dt(u) + U*ux + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - (u*ux + w*uz) - a1*dx(p1) + a1*(dx(txx) + dz(txz)) - dx(φ)")
 problem.add_equation("dt(w) + U*wx + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - (u*wx + w*wz) - a1*dz(p1) + a1*(dx(txz) + dz(tzz)) - dz(φ)")
