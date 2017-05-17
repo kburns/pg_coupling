@@ -15,8 +15,8 @@ p_bottom = 1
 # Domain
 Lz = 2
 Lx = 4
-Nz = 256
-Nx = 64
+Nz = 512
+Nx = 256
 
 # Tolerances
 nlbvp_cutoff = 1e-9
@@ -38,28 +38,28 @@ def N2_func(z):
     return N2_amp * np.exp(-zc**2/2)
 
 # Tide
-A_tide = 1e-10
+A_tide = 1e-6
 k_tide = 2 * np.pi / (Lx/2)
-ω_tide = 0.05
-σ_tide = 0
+ω_tide = 0.09
+σ_tide = 1 / 1000
 
 # Boost to tidal frame
 U = - ω_tide / k_tide
 ω_tide = 0
 
 # Stopping
-stop_sim_time = 10000.0
-stop_wall_time = 12*60*60
+stop_sim_time = 15000.0
+stop_wall_time = 10*60*60
 stop_iteration = np.inf
 
 # Analysis
-snapshot_sim_dt = 10.0
+snapshot_sim_dt = 1.0
 
 # Timestepping
 ts = de.timesteppers.RK222
 CFL = {'initial_dt': 10**-1,
        'min_dt': 10**-4,
-       'max_dt': 10**1,
+       'max_dt': 10**-1,
        'safety': 0.5,
        'cadence': 10,
        'min_change': 0.5,
