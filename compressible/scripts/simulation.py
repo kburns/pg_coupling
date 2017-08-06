@@ -12,6 +12,7 @@ from dedalus import public as de
 from dedalus.extras import flow_tools
 import atmospheres as atmos
 import parameters as param
+import tides
 
 import logging
 logger = logging.getLogger(__name__)
@@ -30,13 +31,13 @@ domain = de.Domain([x_basis, z_basis], grid_dtype=np.float64)
 # Background state
 a0 = domain.new_field()
 p0 = domain.new_field()
-a0.set_scales(1)
-p0.set_scales(1)
-slices = domain.dist.grid_layout.slices(scales=1)
 a0.meta['x']['constant'] = True
 p0.meta['x']['constant'] = True
+a0.set_scales(1)
+p0.set_scales(1)
 a_trunc.set_scales(1)
 p_trunc.set_scales(1)
+slices = domain.dist.grid_layout.slices(scales=1)
 a0['g'][:] = a_trunc['g'][slices[1]]
 p0['g'][:] = p_trunc['g'][slices[1]]
 
@@ -88,7 +89,11 @@ if pathlib.Path('restart.h5').exists():
     write, initial_dt = solver.load_state('restart.h5', -1)
     param.CFL['initial_dt'] = initial_dt
 else:
-    pass
+    _, linear_problem = tides.linear_tide_2d(param)
+    linear_solver = linear_problem.build_solver()
+    linear_solver.solve()
+    for var in problem.variables:
+        solver.state[var]['c'] = linear_solver.state[var]['c']
 
 # Output
 # Checkpoints

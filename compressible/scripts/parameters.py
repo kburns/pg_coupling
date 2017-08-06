@@ -10,12 +10,12 @@ import dedalus.public as de
 g = 1
 p_bottom = 1
 ρ_bottom = 1
-μ = 1e-4
+μ = 1e-6
 
 # Domain
 Lz = 2
 Lx = 4
-Nz = 512
+Nz = 256
 Nx = 256
 
 # Tolerances
@@ -40,8 +40,8 @@ def N2_func(z):
 # Tide
 A_tide = 1e-6
 k_tide = 2 * np.pi / (Lx/2)
-ω_tide = 0.09
-σ_tide = 1 / 1000
+ω_tide = 0.0955
+σ_tide = 0
 
 # Boost to tidal frame
 U = - ω_tide / k_tide
