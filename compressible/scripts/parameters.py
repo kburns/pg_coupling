@@ -54,9 +54,10 @@ stop_iteration = np.inf
 
 # Analysis
 snapshot_sim_dt = 1.0
+checkpoint_wall_dt = 30*60
 
 # Timestepping
-ts = de.timesteppers.RK222
+ts = de.timesteppers.RK443
 CFL = {'initial_dt': 10**-1,
        'min_dt': 10**-4,
        'max_dt': 10**-1,

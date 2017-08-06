@@ -96,17 +96,16 @@ else:
         solver.state[var]['c'] = linear_solver.state[var]['c']
 
 # Output
-# Checkpoints
-an0 = solver.evaluator.add_file_handler('snapshots_grid', sim_dt=param.snapshot_sim_dt, max_writes=10)
-an0.add_system(solver.state, layout='g')
-an0.add_task('p0+p1', name='p', layout='g')
-an0.add_task('a0+a1', name='a', layout='g')
-an0.add_task('(a0+a1)**(-1)', name='ρ', layout='g')
-an1 = solver.evaluator.add_file_handler('snapshots_coeff', sim_dt=param.snapshot_sim_dt, max_writes=10)
-an1.add_system(solver.state, layout='c')
-an1.add_task('p0+p1', name='p', layout='c')
-an1.add_task('a0+a1', name='a', layout='c')
-an1.add_task('(a0+a1)**(-1)', name='ρ', layout='c')
+an0 = solver.evaluator.add_file_handler('checkpoints', wall_dt=param.checkpoint_wall_dt, max_writes=1)
+an0.add_system(solver.state, layout='c')
+an1 = solver.evaluator.add_file_handler('snapshots', sim_dt=param.snapshot_sim_dt, max_writes=10)
+an1.add_task('u', layout='g')
+an1.add_task('w', layout='g')
+an1.add_task('p1', layout='g')
+an1.add_task('a1', layout='g')
+an1.add_task('p0+p1', name='p', layout='g')
+an1.add_task('a0+a1', name='a', layout='g')
+an1.add_task('(a0+a1)**(-1)', name='ρ', layout='g')
 
 # CFL calculator
 CFL = flow_tools.CFL(solver, **param.CFL)
