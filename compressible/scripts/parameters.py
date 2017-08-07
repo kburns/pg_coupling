@@ -53,8 +53,10 @@ stop_wall_time = 10*60*60
 stop_iteration = np.inf
 
 # Analysis
-snapshot_sim_dt = 1.0
 checkpoint_wall_dt = 30*60
+snapshot_sim_dt = 1.0
+scalar_sim_dt = 1.0
+
 
 # Timestepping
 ts = de.timesteppers.RK443
