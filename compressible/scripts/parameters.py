@@ -15,8 +15,8 @@ p_bottom = 1
 # Domain
 Lz = 2
 Lx = 4
-Nz = 256
-Nx = 256
+Nz = 128
+Nx = 128
 
 # Tolerances
 nlbvp_cutoff = 1e-9
@@ -40,7 +40,7 @@ def N2_func(z):
 # Tide
 A_tide = 1e-6
 k_tide = 2 * np.pi / (Lx/2)
-ω_tide = 0.0955
+ω_tide = 0.02874588
 σ_tide = 0
 
 # Boost to tidal frame
