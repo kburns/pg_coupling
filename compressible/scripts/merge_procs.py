@@ -2,7 +2,7 @@
 Merge distributed analysis sets from a FileHandler.
 
 Usage:
-    merge.py <base_path> [--cleanup]
+    merge_procs.py <base_path> [--cleanup]
 
 Options:
     --cleanup   Delete distributed files after merging
