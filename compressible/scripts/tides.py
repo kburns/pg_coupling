@@ -9,20 +9,20 @@ logger = logging.getLogger(__name__)
 
 
 def linear_tide_1d(param, comm=MPI.COMM_SELF):
+    """Solve linear tide with k=k_tide in 1D."""
     # Background BVP
-    domain, p_bvp = atmos.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
-    p_full, p0, a_full, a0, heq, N2 = atmos.truncate_background(param, p_bvp)
-
+    domain, p_full = atmos.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
+    p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_full)
     # Adiabatic viscous fully-compressible hydrodynamics
     problem = de.LBVP(domain, variables=['a1','p1','u','w','uz','wz'],
         ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
     problem.meta[:]['z']['dirichlet'] = True
-    problem.parameters['a0'] = a0
-    problem.parameters['p0'] = p0
-    problem.parameters['a0z'] = a0.differentiate('z')
-    problem.parameters['p0z'] = p0.differentiate('z')
-    problem.substitutions['a0x'] = '0' #a0.differentiate('x')
-    problem.substitutions['p0x'] = '0' #p0.differentiate('x')
+    problem.parameters['a0'] = a_trunc
+    problem.parameters['p0'] = p_trunc
+    problem.parameters['a0z'] = a_trunc.differentiate('z')
+    problem.parameters['p0z'] = p_trunc.differentiate('z')
+    problem.substitutions['a0x'] = '0'
+    problem.substitutions['p0x'] = '0'
     problem.parameters['U'] = param.U
     problem.parameters['μ'] = param.μ
     problem.parameters['γ'] = param.γ
@@ -51,22 +51,18 @@ def linear_tide_1d(param, comm=MPI.COMM_SELF):
     problem.add_bc("right(txz) = 0")
     problem.add_bc("left(w) = 0")
     problem.add_bc("right(w) = 0")
-    # Build solver
-    solver = problem.build_solver()
-    solver.solve()
-    return domain, solver.state
+    return domain, problem
 
 
 def linear_tide_2d(param, comm=MPI.COMM_WORLD):
+    """Solve linear tide in 2D."""
     # Solve background
-    _, p_bvp = atmos.solve_hydrostatic_pressure(param, np.float64)
-    p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_bvp)
-
+    domain_bvp, p_full = atmos.solve_hydrostatic_pressure(param, np.float64)
+    p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_full)
     # IVP domain
-    x_basis = de.Fourier('x', param.Nx, interval=(0, param.Lx), dealias=3/2)
-    z_basis = de.Chebyshev('z', param.Nz, interval=(0, param.Lz), dealias=3/2)
+    x_basis = de.Fourier('x', param.Nx, interval=(0, param.Lx), dealias=2)
+    z_basis = de.Chebyshev('z', param.Nz, interval=(0, param.Lz), dealias=2)
     domain = de.Domain([x_basis, z_basis], grid_dtype=np.float64, comm=comm)
-
     # Background state
     a0 = domain.new_field()
     p0 = domain.new_field()
@@ -79,7 +75,6 @@ def linear_tide_2d(param, comm=MPI.COMM_WORLD):
     slices = domain.dist.grid_layout.slices(scales=1)
     a0['g'][:] = a_trunc['g'][slices[1]]
     p0['g'][:] = p_trunc['g'][slices[1]]
-
     # Adiabatic viscous fully-compressible hydrodynamics
     problem = de.LBVP(domain, variables=['a1','p1','u','w','uz','wz'],
         ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
@@ -88,8 +83,8 @@ def linear_tide_2d(param, comm=MPI.COMM_WORLD):
     problem.parameters['p0'] = p0
     problem.parameters['a0z'] = a0.differentiate('z')
     problem.parameters['p0z'] = p0.differentiate('z')
-    problem.substitutions['a0x'] = '0' #a0.differentiate('x')
-    problem.substitutions['p0x'] = '0' #p0.differentiate('x')
+    problem.substitutions['a0x'] = '0'
+    problem.substitutions['p0x'] = '0'
     problem.parameters['U'] = param.U
     problem.parameters['μ'] = param.μ
     problem.parameters['γ'] = param.γ
@@ -117,6 +112,7 @@ def linear_tide_2d(param, comm=MPI.COMM_WORLD):
     problem.add_bc("right(txz) = 0", condition="nx != 0")
     problem.add_bc("left(w) = 0", condition="nx != 0")
     problem.add_bc("right(w) = 0", condition="nx != 0")
+    # Zero mean perturbations
     problem.add_equation("a1 = 0", condition="nx == 0")
     problem.add_equation("p1 = 0", condition="nx == 0")
     problem.add_equation("u = 0", condition="nx == 0")

@@ -19,11 +19,11 @@ Nz = 128
 Nx = 128
 
 # Tolerances
-nlbvp_cutoff = 1e-9
+nlbvp_cutoff = 1e-12
 nlbvp_max_terms = 64
-nlbvp_tolerance = 1e-9
+nlbvp_tolerance = 1e-12
 pressure_floor = 1e-12
-background_floor = 1e-9
+background_floor = 1e-12
 ivp_cutoff = 1e-9
 matrix_cutoff = 1e-11
 

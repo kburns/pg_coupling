@@ -1,6 +1,8 @@
 # Use glob syntax
 syntax: glob
 
+*.vscode
+*.ipynb_checkpoints
 *.pyc
 *.DS_Store
 *.png
