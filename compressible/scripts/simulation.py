@@ -65,7 +65,7 @@ problem.substitutions['div_u'] = "ux + wz"
 problem.substitutions['txx'] = "μ*(2*ux - 2/3*div_u)"
 problem.substitutions['txz'] = "μ*(wx + uz)"
 problem.substitutions['tzz'] = "μ*(2*wz - 2/3*div_u)"
-problem.substitutions['φ'] = "A*exp(σ*t)*cos(k*x - ω*t)*exp(k*(z - Lz))"
+problem.substitutions['φ'] = "A*exp(σ*t)*cos(k*x)*exp(k*(z - Lz))"
 problem.substitutions['cs20'] = "γ*p0*a0"
 problem.add_equation("dt(u) + U*ux + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - (u*ux + w*uz) - a1*dx(p1) + a1*(dx(txx) + dz(txz)) - dx(φ)")
 problem.add_equation("dt(w) + U*wx + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - (u*wx + w*wz) - a1*dz(p1) + a1*(dx(txz) + dz(tzz)) - dz(φ)")
@@ -109,6 +109,9 @@ an1.add_task('(a0+a1)**(-1)', name='ρ', layout='g')
 an2 = solver.evaluator.add_file_handler('data_scalars', sim_dt=param.scalar_sim_dt, max_writes=100)
 an2.add_task('integ((u*u+w*w)/(a0+a1)/2)', name='KE', layout='g')
 
+# Monitoring
+flow = flow_tools.GlobalFlowProperty(solver, cadence=param.CFL['cadence'])
+flow.add_property('integ((u*u+w*w)/(a0+a1)/2)', name='KE')
 
 # CFL calculator
 CFL = flow_tools.CFL(solver, **param.CFL)
@@ -122,9 +125,10 @@ try:
     while solver.ok:
         dt = CFL.compute_dt()
         dt = dt_floor * (dt // dt_floor)
-        dt = solver.step(dt, trim=True)
+        dt = solver.step(dt, trim=param.trim)
         if (solver.iteration-1) % param.CFL['cadence'] == 0:
             logger.info('Iteration: %i, Time: %e, dt: %e' %(solver.iteration, solver.sim_time, dt))
+            logger.info('Ave KE = %e' %flow.max('KE'))
 except:
     logger.error('Exception raised, triggering end of main loop.')
     logger.error('Final timestep: %f' %dt)

@@ -45,26 +45,26 @@ k_tide = 2 * np.pi / (Lx/2)
 
 # Boost to tidal frame
 U = - ω_tide / k_tide
-ω_tide = 0
 
 # Stopping
-stop_sim_time = 15000.0
-stop_wall_time = 10*60*60
+stop_sim_time = 100 * 2 * np.pi / ω_tide
+stop_wall_time = 10*60*60 + 10*60
 stop_iteration = np.inf
 
 # Analysis
 checkpoint_wall_dt = 30*60
-snapshot_sim_dt = 1.0
-scalar_sim_dt = 1.0
-
+snapshot_sim_dt = 1e-1 * 1/ω_tide
+scalar_sim_dt = 1e-1 * 1/ω_tide
 
 # Timestepping
-ts = de.timesteppers.RK443
-CFL = {'initial_dt': 10**-1,
-       'min_dt': 10**-4,
-       'max_dt': 10**-1,
+ts = de.timesteppers.RK222
+CFL = {'initial_dt': 1e-2 * 1/ω_tide,
+       'min_dt': 1e-5 * 1/ω_tide,
+       'max_dt': 1e-2 * 1/ω_tide,
        'safety': 0.5,
        'cadence': 10,
        'min_change': 0.5,
        'max_change': 1.5,
        'threshold': 0.05}
+trim = False
+
