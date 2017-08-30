@@ -21,7 +21,7 @@ def main(filename, output):
     """Plot scalar time-series."""
 
     # Data selection
-    tasks = ['KE']
+    tasks = ['KE', 'D']
     slices = (slice(None), 0, 0)
 
     # Plot tasks

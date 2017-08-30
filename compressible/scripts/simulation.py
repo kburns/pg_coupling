@@ -108,6 +108,7 @@ an1.add_task('a0+a1', name='a', layout='g')
 an1.add_task('(a0+a1)**(-1)', name='ρ', layout='g')
 an2 = solver.evaluator.add_file_handler('data_scalars', sim_dt=param.scalar_sim_dt, max_writes=100)
 an2.add_task('integ((u*u+w*w)/(a0+a1)/2)', name='KE', layout='g')
+an2.add_task('integ(u*dx(txx) + u*dz(txz) + w*dx(txz) + w*dz(tzz))', name='D', layout='g')
 
 # Monitoring
 flow = flow_tools.GlobalFlowProperty(solver, cadence=param.CFL['cadence'])
