@@ -2,7 +2,8 @@
 Tools for solving the structure of a stratified atmosphere with fixed gravity.
 
 Hydrostatic equilibrium is used to write the buoyancy frequency as:
-    N(z)**2 = g * ((1/γ)*dz(p)/p - dz(ρ)/ρ)
+    N(z)**2 = g * ((1/γ)*dz(lnp) - dz(lnρ))
+            = g * ((1/γ)*dz(p)/p - dz(ρ)/ρ)
             = g * ((1/γ)*dz(p)/p - dzz(p)/dz(p))
 
 This is used to solve for p(z) given N(z)**2, g, and γ:
@@ -86,28 +87,32 @@ def solve_hydrostatic_pressure(param, dtype, comm=MPI.COMM_SELF):
     X0 = np.array([param.p_bottom, -param.ρ_bottom*param.g])
     P = (param.N2_func, param.g, param.γ)
     p_full, pz_full = solve_dedalus(X0, P, domain, tolerance=param.nlbvp_tolerance, ncc_cutoff=param.nlbvp_cutoff, max_ncc_terms=param.nlbvp_max_terms)
-    return domain, p_full
+    a_full = domain.new_field()
+    a_full.set_scales(2)
+    a_full['g'] = - param.g / pz_full['g']
+    return domain, p_full, a_full
 
-def truncate_background(param, p_full):
+def truncate_background(param, p_full, a_full):
     """Truncate background fields."""
     # Filter pressure
     p = p_full.domain.new_field()
     p['c'] = p_full['c']
-    p['c'][np.abs(p['c']) < param.pressure_floor] = 0
+    p_cut = param.pressure_floor * np.max(np.abs(p['c']))
+    p['c'][np.abs(p['c']) < p_cut] = 0
     # Construct new density
     g, γ = param.g, param.γ
     pz = p.differentiate('z')
-    a_full = ((-g)/pz).evaluate()
     # Filter density
     a = a_full.domain.new_field()
     a['c'] = a_full['c']
-    a['c'][np.abs(a['c']) < param.background_floor] = 0
+    a_cut = param.background_floor * np.max(np.abs(a['c']))
+    a['c'][np.abs(a['c']) < a_cut] = 0
     # Compute buoyancy frequency
     az = a.differentiate('z')
     N2 = (g*(az/a + (1/γ)*pz/p)).evaluate()
     # Compute hydrostatic balance
     heq = (a*pz + g).evaluate()
     # Re-zero high modes
-    p['c'][np.abs(p['c']) < param.pressure_floor] = 0
-    a['c'][np.abs(a['c']) < param.background_floor] = 0
+    p['c'][np.abs(p['c']) < p_cut] = 0
+    a['c'][np.abs(a['c']) < a_cut] = 0
     return p_full, p, a_full, a, heq, N2
