@@ -32,9 +32,10 @@ def main(filename, output):
     with h5py.File(filename, mode='r') as file:
         sim_time = file['scales']['sim_time'][:]
         for task, ax in zip(tasks, axes):
-            dset = file['tasks'][task]
-            ax.plot(sim_time[slices[0]], dset[slices], '.-')
-            ax.set_ylabel(task)
+            if task in file['tasks']:            
+                dset = file['tasks'][task]
+                ax.plot(sim_time[slices[0]], dset[slices], '.-')
+                ax.set_ylabel(task)
         ax.set_xlabel('sim time')
 
     # Finalize figure

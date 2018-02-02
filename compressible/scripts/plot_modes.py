@@ -2,7 +2,7 @@
 Plot scalars from single analysis file.
 
 Usage:
-    plot_modes.py <file> [--output=<dir>]
+    plot_modes.py <file> <krel> <N> <target> [--output=<dir>]
 
 Options:
     --output=<output>  Output file [default: ./img_modes.pdf]
@@ -67,12 +67,10 @@ def load_state_vectors(filename, kx):
     return sim_time, data
 
 
-def main(filename, output):
+def main(filename, krel, N, target, output):
 
     # Parameters
-    kx = 2*np.pi
-    N = 10
-    target = 0.15 - 0.001j
+    kx = krel * param.k_tide
 
     # Project modes
     evals, projector = compute_adjoint_modes(kx, N, target)
@@ -86,12 +84,12 @@ def main(filename, output):
         ax.plot(sim_time, np.log10(np.abs(mode_amplitudes[:,n])), label=evals[n])
     ax.set_xlabel('sim time')
     ax.set_ylabel('mode amplitude')
-    plt.legend(loc='upper left')
+    plt.legend(loc='lower right')
     plt.savefig(output)
 
 
 if __name__ == "__main__":
     from docopt import docopt
     args = docopt(__doc__)
-    main(args['<file>'], args['--output'])
+    main(args['<file>'], float(args['<krel>']), int(args['<N>']), complex(args['<target>']), args['--output'])
 

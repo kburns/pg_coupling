@@ -98,6 +98,8 @@ else:
 # Output
 an0 = solver.evaluator.add_file_handler('data_checkpoints', wall_dt=param.checkpoint_wall_dt, max_writes=1)
 an0.add_system(solver.state, layout='c')
+an3 = solver.evaluator.add_file_handler('data_snapshots_coeff', sim_dt=param.snapshot_sim_dt, max_writes=10)
+an3.add_system(solver.state, layout='c')
 an1 = solver.evaluator.add_file_handler('data_snapshots', sim_dt=param.snapshot_sim_dt, max_writes=10)
 an1.add_task('u', layout='g')
 an1.add_task('w', layout='g')
