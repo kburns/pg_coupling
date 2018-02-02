@@ -14,7 +14,7 @@ p_bottom = 1
 
 # Domain
 Lz = 2
-Lx = 4
+Lx = 2*Lz
 Nz = 128
 Nx = 128
 
@@ -22,8 +22,8 @@ Nx = 128
 nlbvp_cutoff = 1e-12
 nlbvp_max_terms = 64
 nlbvp_tolerance = 1e-12
-pressure_floor = 1e-12
-background_floor = 1e-12
+pressure_floor = 1e-15
+background_floor = 1e-15
 ivp_cutoff = 1e-9
 matrix_cutoff = 1e-11
 
@@ -39,7 +39,7 @@ def N2_func(z):
 
 # Tide
 A_tide = 1e-6
-k_tide = 2 * np.pi / (Lx/2)
+k_tide = 2 * (2*np.pi/Lx)
 ω_tide = 0.02874588
 σ_tide = 0
 
