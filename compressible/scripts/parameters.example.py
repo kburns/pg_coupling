@@ -10,13 +10,13 @@ import dedalus.public as de
 g = 1
 p_bottom = 1
 ρ_bottom = 1
-μ = 1e-6
+μ = 1e-8
 
 # Domain
 Lz = 2
 Lx = 2*Lz
 Nz = 128
-Nx = 128
+Nx = 64
 
 # Tolerances
 nlbvp_cutoff = 1e-12
@@ -40,7 +40,7 @@ def N2_func(z):
 # Tide
 A_tide = 1e-6
 k_tide = 2 * (2*np.pi/Lx)
-ω_tide = 0.02874588
+ω_tide = 0.02875173
 σ_tide = 0
 
 # Boost to tidal frame

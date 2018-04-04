@@ -39,7 +39,7 @@ def linear_tide_1d(param, comm=MPI.COMM_SELF):
     problem.substitutions['txx'] = "μ*(2*ux - 2/3*div_u)"
     problem.substitutions['txz'] = "μ*(wx + uz)"
     problem.substitutions['tzz'] = "μ*(2*wz - 2/3*div_u)"
-    problem.substitutions['φ'] = "A*exp(k*(z - Lz))"
+    problem.substitutions['φ'] = "A/2*exp(k*(z - Lz))"
     problem.substitutions['cs20'] = "γ*p0*a0"
     problem.add_equation("dt(u) + U*ux + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - dx(φ)")
     problem.add_equation("dt(w) + U*wx + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - dz(φ)")
@@ -47,8 +47,8 @@ def linear_tide_1d(param, comm=MPI.COMM_SELF):
     problem.add_equation("dt(p1) + U*dx(p1) + u*p0x + w*p0z + γ*p0*div_u = 0")
     problem.add_equation("uz - dz(u) = 0")
     problem.add_equation("wz - dz(w) = 0")
-    problem.add_bc("left(txz) = 0")
-    problem.add_bc("right(txz) = 0")
+    problem.add_bc("left(txz/μ) = 0")
+    problem.add_bc("right(txz/μ) = 0")
     problem.add_bc("left(w) = 0")
     problem.add_bc("right(w) = 0")
     return domain, problem
@@ -108,8 +108,8 @@ def linear_tide_2d(param, comm=MPI.COMM_WORLD):
     problem.add_equation("dt(p1) + U*dx(p1) + u*p0x + w*p0z + γ*p0*div_u = 0", condition="nx != 0")
     problem.add_equation("uz - dz(u) = 0", condition="nx != 0")
     problem.add_equation("wz - dz(w) = 0", condition="nx != 0")
-    problem.add_bc("left(txz) = 0", condition="nx != 0")
-    problem.add_bc("right(txz) = 0", condition="nx != 0")
+    problem.add_bc("left(txz/μ) = 0", condition="nx != 0")
+    problem.add_bc("right(txz/μ) = 0", condition="nx != 0")
     problem.add_bc("left(w) = 0", condition="nx != 0")
     problem.add_bc("right(w) = 0", condition="nx != 0")
     # Zero mean perturbations
@@ -150,10 +150,9 @@ def eigenmodes_1d(param, kx, comm=MPI.COMM_SELF):
     problem.substitutions['txx'] = "μ*(2*ux - 2/3*div_u)"
     problem.substitutions['txz'] = "μ*(wx + uz)"
     problem.substitutions['tzz'] = "μ*(2*wz - 2/3*div_u)"
-    problem.substitutions['φ'] = "0"
     problem.substitutions['cs20'] = "γ*p0*a0"
-    problem.add_equation("dt(u) + U*ux + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - (u*ux + w*uz) - a1*dx(p1) + a1*(dx(txx) + dz(txz)) - dx(φ)")
-    problem.add_equation("dt(w) + U*wx + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - (u*wx + w*wz) - a1*dz(p1) + a1*(dx(txz) + dz(tzz)) - dz(φ)")
+    problem.add_equation("dt(u) + U*ux + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - (u*ux + w*uz) - a1*dx(p1) + a1*(dx(txx) + dz(txz))")
+    problem.add_equation("dt(w) + U*wx + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - (u*wx + w*wz) - a1*dz(p1) + a1*(dx(txz) + dz(tzz))")
     problem.add_equation("dt(a1) + U*dx(a1) + u*a0x + w*a0z -   a0*div_u = - (U*a0x + u*dx(a1) + w*dz(a1)) +   a1*div_u")
     problem.add_equation("dt(p1) + U*dx(p1) + u*p0x + w*p0z + γ*p0*div_u = - (U*p0x + u*dx(p1) + w*dz(p1)) - γ*p1*div_u")
     problem.add_equation("uz - dz(u) = 0")
