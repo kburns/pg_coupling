@@ -1,8 +1,6 @@
 
 
-import h5py
 import numpy as np
-import parameters as param
 import tides
 from scipy.linalg import eig
 from dedalus.tools.sparse import scipy_sparse_eigs
@@ -85,7 +83,7 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minreal=0, m
     # Normalize adjoint modes
     metric = solver.adjoint_eigenvectors.T.conj() @ pencil.M @ solver.eigenvectors
     solver.adjoint_eigenvectors /= np.diag(metric).conj()
-    adjoint_modes = solver.adjoint_eigenvectors.T.conj()
-    adjoint_projector = solver.adjoint_eigenvectors.T.conj() @ pencil.M
-    return solver.eigenvalues, solver.eigenvectors, adjoint_modes, adjoint_projector
+    adjointvectors = solver.adjoint_eigenvectors.T.conj()
+    projector = solver.adjoint_eigenvectors.T.conj() @ pencil.M
+    return solver.eigenvalues, solver.eigenvectors, adjointvectors, projector
 
