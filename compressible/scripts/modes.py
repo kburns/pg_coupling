@@ -6,6 +6,9 @@ from scipy.linalg import eig
 from dedalus.tools.sparse import scipy_sparse_eigs
 import dedalus.public as de
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 def compute_energies(solver):
     """
@@ -69,8 +72,9 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minreal=0, m
     solver.adjoint_eigenvalues = solver.adjoint_eigenvalues[sorting]
     solver.adjoint_eigenvectors = solver.adjoint_eigenvectors[:,sorting]
     # Check mode matching
+    logger.info("Max eval mismatch: %e" %np.max(np.abs(solver.eigenvalues - solver.adjoint_eigenvalues.conj())))
     if not np.allclose(solver.eigenvalues, solver.adjoint_eigenvalues.conj()):
-        raise ValueError("Adjoint modes do not match forward modes.")
+        logger.warn("WARNING: Adjoint modes may not match forward modes.")
     # Normalize modes
     if energy_norm:
         # Normalize by energy
@@ -83,7 +87,6 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minreal=0, m
     # Normalize adjoint modes
     metric = solver.adjoint_eigenvectors.T.conj() @ pencil.M @ solver.eigenvectors
     solver.adjoint_eigenvectors /= np.diag(metric).conj()
-    adjointvectors = solver.adjoint_eigenvectors.T.conj()
     projector = solver.adjoint_eigenvectors.T.conj() @ pencil.M
-    return solver.eigenvalues, solver.eigenvectors, adjointvectors, projector
+    return solver.eigenvalues, solver.eigenvectors, solver.adjoint_eigenvalues, solver.adjoint_eigenvectors, projector
 
