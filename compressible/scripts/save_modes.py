@@ -13,11 +13,12 @@ from mpi4py import MPI
 
 def save_eigenmodes(output, *args, **kw):
     """Save eigenmodes."""
-    eigenvalues, eigenvectors, adjointvectors, projector = modes.compute_eigenmodes(*args, **kw)
-    np.savez(output, eigenvalues=eigenvalues,
-                     eigenvectors=eigenvectors,
-                     adjointvectors=adjointvectors,
-                     projector=projector)
+    evals, evecs, adj_evals, adj_evecs, proj = modes.compute_eigenmodes(*args, **kw)
+    np.savez(output, evals=evals,
+                     evecs=evecs,
+                     adj_evals=adj_evals,
+                     adj_evecs=adj_evecs,
+                     proj=proj)
 
 
 def main(param, krel_list, comm=MPI.COMM_WORLD):
