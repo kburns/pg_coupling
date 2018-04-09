@@ -16,26 +16,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.ioff()
 import parameters as param
-
-
-def compute_adjoint_modes(kx, N, target):
-    import tides
-    from dedalus.tools.sparse import scipy_sparse_eigs
-    # Solve eigenvalue problem
-    domain, problem = tides.eigenmodes_1d(param, kx=kx)
-    solver = problem.build_solver()
-    pencil = solver.pencils[0]
-    solver.solve_sparse(pencil, N=N, target=target)
-    # Solve adjoint problem
-    solver.adjoint_eigenvalues, solver.adjoint_eigenvectors = scipy_sparse_eigs(A=pencil.L_exp.getH(), B=-pencil.M_exp.getH(), N=N, target=np.conj(target))
-    # Check mode matching
-    if not np.allclose(solver.eigenvalues, solver.adjoint_eigenvalues.conj()):
-        raise ValueError("Adjoint modes do not match forward modes.")
-    # Normalize modes
-    g = solver.adjoint_eigenvectors.T.conj() @ pencil.M @ solver.eigenvectors
-    adjoint_eigenvectors_norm = solver.adjoint_eigenvectors / np.diag(g).conj()
-    adjoint_projector = adjoint_eigenvectors_norm.T.conj() @ pencil.M
-    return solver.eigenvalues, adjoint_projector
+import modes
 
 
 def cycle_arrays(arrays, axis):
@@ -73,7 +54,7 @@ def main(filename, krel, N, target, output):
     kx = krel * param.k_tide
 
     # Project modes
-    evals, projector = compute_adjoint_modes(kx, N, target)
+    evals, projector = modes.compute_eigenmodes(param, kx, N=N, target=target)
     sim_time, data = load_state_vectors(filename, kx)
     mode_amplitudes = data @ projector.T
 
