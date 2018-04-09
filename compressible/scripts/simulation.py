@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 
 # Solve background
-domain, p_bvp = atmos.solve_hydrostatic_pressure(param, np.float64)
-p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_bvp)
+domain, p_bvp, a_bvp = atmos.solve_hydrostatic_pressure(param, np.float64)
+p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_bvp, a_bvp)
 np.seterr(all='raise')
 
 # IVP domain
