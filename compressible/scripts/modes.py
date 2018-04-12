@@ -53,15 +53,14 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minreal=0, m
         solver.adjoint_eigenvalues, solver.adjoint_eigenvectors = scipy_sparse_eigs(A=pencil.L_exp.getH(), B=-pencil.M_exp.getH(), N=N, target=np.conj(target))
     # Solve dense
     else:
-        # Solve forward problem
-        solver.solve_dense(pencil)
-        # Solve adjoint problem
-        solver.adjoint_eigenvalues, solver.adjoint_eigenvectors = eig(pencil.L.getH().A, b=-pencil.M.getH().A)
+        # Solve forward and adjoint problem
+        solver.solve_dense(pencil, left=True, right=True, overwrite_a=True, overwrite_b=True)
+        solver.adjoint_eigenvalues = solver.eigenvalues.conj()
+        solver.adjoint_eigenvectors = solver.left_eigenvectors
         # Filter modes
-        keep = (np.abs(solver.eigenvalues) < maxabs) * (np.abs(solver.eigenvalues.real) > minreal)
+        keep = np.isfinite(solver.eigenvalues) * (np.abs(solver.eigenvalues) < maxabs) * (np.abs(solver.eigenvalues.real) > minreal)
         solver.eigenvalues = solver.eigenvalues[keep]
         solver.eigenvectors = solver.eigenvectors[:,keep]
-        keep = (np.abs(solver.adjoint_eigenvalues) < maxabs) * (np.abs(solver.adjoint_eigenvalues.real) > minreal)
         solver.adjoint_eigenvalues = solver.adjoint_eigenvalues[keep]
         solver.adjoint_eigenvectors = solver.adjoint_eigenvectors[:,keep]
     # Sort modes
