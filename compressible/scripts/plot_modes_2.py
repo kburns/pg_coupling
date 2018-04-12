@@ -15,6 +15,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import parameters as param
+from dedalus.extras import plot_tools
 plt.ioff()
 
 
@@ -52,9 +53,11 @@ def main(filename, start, count, output):
     """Save plot of specified tasks for given range of analysis writes."""
 
     # Plot settings
-    krel_list = [0.25, 0.5, 1.0, 2.0, 3.0, 4.0]
+    krel_list = [0.5, 1.0, 2.0, 3.0, 4.0, 5.0]
     scale = 2.5
     dpi = 100
+    title_func = lambda sim_time: 't = {:.3f}'.format(sim_time)
+    savename_func = lambda write: 'write_{:06}.png'.format(write)
     # Layout
     nrows, ncols = 2, 3
     image = plot_tools.Box(2, 2)
@@ -62,11 +65,12 @@ def main(filename, start, count, output):
     margin = plot_tools.Frame(0.3, 0.2, 0.1, 0.1)
 
     # Load projectors
-    def get_proj(krel):
-        with np.load("data_modes_%s.npz" %krel, mode='r') as file:
+    def get_evals_proj(krel):
+        with np.load("data_modes_%s.npz" %krel, 'r') as file:
+            evals = file['evals']
             proj = file['proj']
-        return proj
-    proj = {krel: get_proj(krel) for krel in krel_list}
+        return evals, proj
+    evals_proj = {krel: get_evals_proj(krel) for krel in krel_list}
 
     # Create multifigure
     mfig = plot_tools.MultiFigure(nrows, ncols, image, pad, margin, scale)
@@ -81,13 +85,15 @@ def main(filename, start, count, output):
                 ax = mfig.add_axes(i, j, [0, 0, 1, 1])
                 # Plot amplitudes
                 data = build_state_vector(file, index, krel)
-                amps = proj[krel] @ data
+                evals, proj = evals_proj[krel]
+                amps = proj @ data
                 ax.loglog(evals.real, np.abs(amps), 'ob')
                 ax.loglog(-evals.real, np.abs(amps), '.r')
                 ax.set_title('krel = %s' %krel)
                 ax.grid()
                 ax.set_xlabel('ω')
-                ax.ylabel('amp')
+                ax.set_ylabel('amp')
+                ax.set_ylim(1e-26, 1e-2)
             # Add time title
             title = title_func(file['scales/sim_time'][index])
             title_height = 1 - 0.5 * mfig.margin.top / mfig.fig.y
