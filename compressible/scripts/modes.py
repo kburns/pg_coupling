@@ -22,7 +22,7 @@ def compute_energies(solver):
       = 4 Lx int ρ0 (u u* + w w*) dz
     """
     # Construct energy operator
-    Lx = 2*np.pi / solver.problem.parameters['kx']
+    Lx = solver.problem.parameters['Lx']
     ρ0 = 1 / solver.problem.parameters['a0']
     u = solver.state['u']
     w = solver.state['w']
@@ -57,6 +57,10 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minreal=0, m
         solver.solve_dense(pencil, left=True, right=True, overwrite_a=True, overwrite_b=True)
         solver.adjoint_eigenvalues = solver.eigenvalues.conj()
         solver.adjoint_eigenvectors = solver.left_eigenvectors
+        solver.full_eigenvalues = solver.eigenvalues.copy()
+        solver.full_eigenvectors = solver.eigenvectors.copy()
+        solver.full_adjoint_eigenvalues = solver.adjoint_eigenvalues.copy()
+        solver.full_adjoint_eigenvectors = solver.adjoint_eigenvectors.copy()
         # Filter modes
         keep = np.isfinite(solver.eigenvalues) * (np.abs(solver.eigenvalues) < maxabs) * (np.abs(solver.eigenvalues.real) > minreal)
         solver.eigenvalues = solver.eigenvalues[keep]
@@ -87,5 +91,5 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minreal=0, m
     metric = solver.adjoint_eigenvectors.T.conj() @ pencil.M @ solver.eigenvectors
     solver.adjoint_eigenvectors /= np.diag(metric).conj()
     projector = solver.adjoint_eigenvectors.T.conj() @ pencil.M
-    return solver.eigenvalues, solver.eigenvectors, solver.adjoint_eigenvalues, solver.adjoint_eigenvectors, projector
+    return solver.eigenvalues, solver.eigenvectors, solver.adjoint_eigenvalues, solver.adjoint_eigenvectors, projector, solver, pencil
 
