@@ -18,39 +18,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Solve background
-domain, p_bvp, a_bvp = atmos.solve_hydrostatic_pressure(param, np.float64)
-p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_bvp, a_bvp)
-np.seterr(all='raise')
-
-# IVP domain
-x_basis = de.Fourier('x', param.Nx, interval=(0, param.Lx), dealias=3/2)
-z_basis = de.Chebyshev('z', param.Nz, interval=(0, param.Lz), dealias=3/2)
-domain = de.Domain([x_basis, z_basis], grid_dtype=np.float64)
-
-# Background state
-a0 = domain.new_field()
-p0 = domain.new_field()
-a0.meta['x']['constant'] = True
-p0.meta['x']['constant'] = True
-a0.set_scales(1)
-p0.set_scales(1)
-a_trunc.set_scales(1)
-p_trunc.set_scales(1)
-slices = domain.dist.grid_layout.slices(scales=1)
-a0['g'][:] = a_trunc['g'][slices[1]]
-p0['g'][:] = p_trunc['g'][slices[1]]
+# Solve 2d linear problem
+atmos, linear_problem = tides.linear_tide_2d(param)
+linear_solver = linear_problem.build_solver()
+linear_solver.solve()
 
 # Adiabatic viscous fully-compressible hydrodynamics
-problem = de.IVP(domain, variables=['a1','p1','u','w','uz','wz'],
+problem = de.IVP(atmos.domain, variables=['a1','p1','u','w','uz','wz'],
     ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
 problem.meta[:]['z']['dirichlet'] = True
-problem.parameters['a0'] = a0
-problem.parameters['p0'] = p0
-problem.parameters['a0z'] = a0.differentiate('z')
-problem.parameters['p0z'] = p0.differentiate('z')
-problem.substitutions['a0x'] = '0' #a0.differentiate('x')
-problem.substitutions['p0x'] = '0' #p0.differentiate('x')
+problem.parameters['lin_a1'] = linear_solver.state['a1']
+problem.parameters['lin_p1'] = linear_solver.state['p1']
+problem.parameters['lin_u'] = linear_solver.state['u']
+problem.parameters['lin_w'] = linear_solver.state['w']
+problem.parameters['a0'] = atmos.a0
+problem.parameters['p0'] = atmos.p0
+problem.parameters['a0z'] = atmos.a0z
+problem.parameters['p0z'] = atmos.p0z
 problem.parameters['U'] = param.U
 problem.parameters['μ'] = param.μ
 problem.parameters['γ'] = param.γ
@@ -59,6 +43,8 @@ problem.parameters['ω'] = param.ω_tide
 problem.parameters['σ'] = param.σ_tide
 problem.parameters['A'] = param.A_tide
 problem.parameters['Lz'] = param.Lz
+problem.substitutions['a0x'] = '0'
+problem.substitutions['p0x'] = '0'
 problem.substitutions['ux'] = "dx(u)"
 problem.substitutions['wx'] = "dx(w)"
 problem.substitutions['div_u'] = "ux + wz"
@@ -89,9 +75,6 @@ if pathlib.Path('restart.h5').exists():
     write, initial_dt = solver.load_state('restart.h5', -1)
     param.CFL['initial_dt'] = initial_dt
 else:
-    _, linear_problem = tides.linear_tide_2d(param)
-    linear_solver = linear_problem.build_solver()
-    linear_solver.solve()
     for var in problem.variables:
         solver.state[var]['c'] = linear_solver.state[var]['c']
 
@@ -101,16 +84,17 @@ an0.add_system(solver.state, layout='c')
 an3 = solver.evaluator.add_file_handler('data_snapshots_coeff', sim_dt=param.snapshot_sim_dt, max_writes=10)
 an3.add_system(solver.state, layout='c')
 an1 = solver.evaluator.add_file_handler('data_snapshots', sim_dt=param.snapshot_sim_dt, max_writes=10)
-an1.add_task('u', layout='g')
-an1.add_task('w', layout='g')
-an1.add_task('p1', layout='g')
-an1.add_task('a1', layout='g')
+an1.add_system(solver.state, layout='g')
 an1.add_task('p0+p1', name='p', layout='g')
 an1.add_task('a0+a1', name='a', layout='g')
 an1.add_task('(a0+a1)**(-1)', name='ρ', layout='g')
+an1.add_task('a1 - lin_a1', name='diff_a1', layout='g')
+an1.add_task('p1 - lin_p1', name='diff_p1', layout='g')
+an1.add_task('u - lin_u', name='diff_u', layout='g')
+an1.add_task('w - lin_w', name='diff_w', layout='g')
 an2 = solver.evaluator.add_file_handler('data_scalars', sim_dt=param.scalar_sim_dt, max_writes=100)
 an2.add_task('integ((u*u+w*w)/(a0+a1)/2)', name='KE', layout='g')
-an2.add_task('integ(u*dx(txx) + u*dz(txz) + w*dx(txz) + w*dz(tzz))', name='D', layout='g')
+an2.add_task('-integ(u*dx(txx) + u*dz(txz) + w*dx(txz) + w*dz(tzz))', name='D', layout='g')
 
 # Monitoring
 flow = flow_tools.GlobalFlowProperty(solver, cadence=param.CFL['cadence'])
