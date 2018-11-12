@@ -14,7 +14,7 @@ class Atmosphere:
 
     def __init__(self, param, dim, dtype=np.float64, comm=None):
         # Solve and truncate background
-        bvp_domain, p0_full, a0_full = background.solve_hydrostatic_pressure(param, dtype, comm)
+        bvp_domain, p0_full, a0_full = background.solve_hydrostatic_pressure(param, dtype)
         p0_full, p0_trunc, a0_full, a0_trunc, heq, N2 = background.truncate_background(param, p0_full, a0_full)
         # Save domain and backgrounds
         if dim == 1:
