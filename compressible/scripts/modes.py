@@ -1,13 +1,49 @@
 
 
 import numpy as np
+import pathlib
 import tides
+import pickle
 from scipy.linalg import eig
 from dedalus.tools.sparse import scipy_sparse_eigs
 import dedalus.public as de
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+def filename(param, krel):
+    return "emodes/emodes_%i_%.1f.pkl" %(param.Nz, krel)
+
+
+def save_modes(param, krel, verbose=True):
+    """Compute and save eigenmodes."""
+    if verbose:
+        print("Saving modes krel=%.1f" %krel)
+    logging.disable(logging.INFO)
+    eigenmodes = compute_eigenmodes(param, krel*param.k_tide, sparse=False)
+    logging.disable(logging.NOTSET)
+    # Drop solver/pencil object references
+    eigenmodes = eigenmodes[:5]
+    pickle.dump(eigenmodes, open(filename(param, krel), "wb"))
+    return eigenmodes
+    
+    
+def load_modes(param, krel, verbose=True):
+    """Load saved eigenmodes."""
+    if verbose:
+        print("Loading modes krel=%.1f" %krel)
+    return pickle.load(open(filename(param, krel), "rb"))
+
+
+def get_modes(param, krel_list, force=False, verbose=True):
+    """Retrieve eigenmodes."""
+    eigenmodes = {}
+    for krel in krel_list:
+        if force or (not pathlib.Path(filename(param, krel)).exists()):
+            eigenmodes[krel] = save_modes(param, krel, verbose=verbose)
+        eigenmodes[krel] = load_modes(param, krel, verbose=verbose)
+    return eigenmodes
 
 
 def compute_energies(solver):
@@ -32,7 +68,7 @@ def compute_energies(solver):
     energies = np.zeros(N)
     for i in range(N):
         solver.set_state(i)
-        energies[i] = E_op.evaluate()['c'][0]
+        energies[i] = np.abs(E_op.evaluate()['c'][0])
     return energies
 
 
@@ -81,6 +117,9 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minabs=0, ma
     if not np.allclose(solver.eigenvalues, solver.adjoint_eigenvalues.conj()):
         logger.warn("WARNING: Adjoint modes may not match forward modes.")
     # Normalize modes
+    # Normalize phase to that of first index
+    phase = lambda Z: Z / np.abs(Z)
+    solver.eigenvectors /= phase(solver.eigenvectors[0:1,:])
     if energy_norm:
         # Normalize by energy
         metric_diag = compute_energies(solver)
@@ -93,5 +132,10 @@ def compute_eigenmodes(param, kx, sparse=True, N=None, target=None, minabs=0, ma
     metric = solver.adjoint_eigenvectors.T.conj() @ pencil.M @ solver.eigenvectors
     solver.adjoint_eigenvectors /= np.diag(metric).conj()
     projector = solver.adjoint_eigenvectors.T.conj() @ pencil.M
+    # Check orthogonality
+    metric = projector @ solver.eigenvectors
+    logger.info("Max metric mismatch: %e" %np.max(np.abs(metric - np.eye(*metric.shape))))
+    if not np.allclose(metric, np.eye(*metric.shape)):
+        logger.warn("WARNING: Adjoint modes may not be orthogonal to forward modes.")
     return solver.eigenvalues, solver.eigenvectors, solver.adjoint_eigenvalues, solver.adjoint_eigenvectors, projector, solver, pencil
 
