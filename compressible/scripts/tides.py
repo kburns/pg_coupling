@@ -2,7 +2,7 @@
 
 import numpy as np
 import dedalus.public as de
-import atmospheres as pg_background
+import background as background
 import mpi4py.MPI as MPI
 import logging
 from collections import OrderedDict
@@ -14,7 +14,7 @@ class Atmosphere:
 
     def __init__(self, param, dim, dtype=np.float64, comm=None):
         # Solve and truncate background
-        bvp_domain, p0_full, a0_full = pg_background.solve_hydrostatic_pressure(param, dtype)
+        bvp_domain, p0_full, a0_full = background.solve_hydrostatic_pressure(param, dtype)
         p0_full, p0_trunc, a0_full, a0_trunc, heq, N2 = background.truncate_background(param, p0_full, a0_full)
         # Save domain and backgrounds
         if dim == 1:
@@ -188,8 +188,8 @@ def linear_tide_2d(param, atmos=None, dtype=np.float64, comm=MPI.COMM_WORLD):
 def eigenmodes_1d(param, kx, comm=MPI.COMM_SELF):
     """Solve normal modes for any kx in 1D."""
     # Background BVP
-    domain, p_full, a_full = pg_background.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
-    p_full, p_trunc, a_full, a_trunc, heq, N2 = pg_background.truncate_background(param, p_full, a_full)
+    domain, p_full, a_full = background.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
+    p_full, p_trunc, a_full, a_trunc, heq, N2 = background.truncate_background(param, p_full, a_full)
     # Adiabatic viscous fully-compressible hydrodynamics
     problem = de.EVP(domain, variables=['a1','p1','u','w','uz','wz'], eigenvalue='σ',
         ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
@@ -230,7 +230,7 @@ def eigenmodes_1d(param, kx, comm=MPI.COMM_SELF):
 def eigenmodes_inviscid_1d(param, kx, comm=MPI.COMM_SELF):
     """Solve normal modes for any kx in 1D."""
     # Background BVP
-    domain, p_full, a_full = pg_background.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
+    domain, p_full, a_full = background.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
     p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_full, a_full)
     # Adiabatic viscous fully-compressible hydrodynamics
     problem = de.EVP(domain, variables=['a1','p1','u','w','uz','wz'], eigenvalue='σ',

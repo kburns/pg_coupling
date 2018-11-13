@@ -10,7 +10,7 @@ import pathlib
 
 from dedalus import public as de
 from dedalus.extras import flow_tools
-import atmospheres as atmos
+import background as atmos
 import parameters as param
 import tides
 
