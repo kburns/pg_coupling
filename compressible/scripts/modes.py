@@ -27,8 +27,8 @@ def save_modes(param, krel, verbose=True):
     eigenmodes = eigenmodes[:5]
     pickle.dump(eigenmodes, open(filename(param, krel), "wb"))
     return eigenmodes
-    
-    
+
+
 def load_modes(param, krel, verbose=True):
     """Load saved eigenmodes."""
     if verbose:

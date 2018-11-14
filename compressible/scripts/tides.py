@@ -91,8 +91,8 @@ def linear_tide_1d(param, comm=MPI.COMM_SELF):
     """Solve linear tide with k=k_tide in 1D."""
     # Background BVP
     dtype = np.complex128
-    domain, p_full, a_full = atmos.solve_hydrostatic_pressure(param, dtype, comm=comm)
-    p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_full, a_full)
+    domain, p_full, a_full = background.solve_hydrostatic_pressure(param, dtype, comm=comm)
+    p_full, p_trunc, a_full, a_trunc, heq, N2 = background.truncate_background(param, p_full, a_full)
     # Adiabatic viscous fully-compressible hydrodynamics
     problem = de.LBVP(domain, variables=['a1','p1','u','w','uz','wz'],
         ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
@@ -110,6 +110,8 @@ def linear_tide_1d(param, comm=MPI.COMM_SELF):
     problem.parameters['A'] = param.A_tide
     problem.parameters['Lx'] = param.Lx
     problem.parameters['Lz'] = param.Lz
+    problem.substitutions['a0x'] = '0'
+    problem.substitutions['p0x'] = '0'
     problem.substitutions['dt(Q)'] = "0*Q"
     problem.substitutions['dx(Q)'] = "1j*k*Q"
     problem.substitutions['ux'] = "dx(u)"
@@ -231,7 +233,7 @@ def eigenmodes_inviscid_1d(param, kx, comm=MPI.COMM_SELF):
     """Solve normal modes for any kx in 1D."""
     # Background BVP
     domain, p_full, a_full = background.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
-    p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_full, a_full)
+    p_full, p_trunc, a_full, a_trunc, heq, N2 = background.truncate_background(param, p_full, a_full)
     # Adiabatic viscous fully-compressible hydrodynamics
     problem = de.EVP(domain, variables=['a1','p1','u','w','uz','wz'], eigenvalue='σ',
         ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
@@ -274,8 +276,8 @@ def eigenmodes_inviscid_1d(param, kx, comm=MPI.COMM_SELF):
 def eigenmodes_inviscid_1d_simplified(param, kx, comm=MPI.COMM_SELF):
     """Solve normal modes for any kx in 1D."""
     # Background BVP
-    domain, p_full, a_full = atmos.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
-    p_full, p_trunc, a_full, a_trunc, heq, N2 = atmos.truncate_background(param, p_full, a_full)
+    domain, p_full, a_full = background.solve_hydrostatic_pressure(param, np.complex128, comm=comm)
+    p_full, p_trunc, a_full, a_trunc, heq, N2 = background.truncate_background(param, p_full, a_full)
     # Adiabatic viscous fully-compressible hydrodynamics
     problem = de.EVP(domain, variables=['u','w','uz','wz'], eigenvalue='σ2',
         ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
