@@ -24,13 +24,13 @@ linear_solver = linear_problem.build_solver()
 linear_solver.solve()
 
 # Adiabatic viscous fully-compressible hydrodynamics
-problem = de.IVP(atmos.domain, variables=['a1','p1','u','w','uz','wz'],
+problem = de.IVP(atmos.domain, variables=['a2','p2','u2','w2','u2z','w2z'],
     ncc_cutoff=param.ivp_cutoff, entry_cutoff=param.matrix_cutoff)
 problem.meta[:]['z']['dirichlet'] = True
-problem.parameters['lin_a1'] = linear_solver.state['a1']
-problem.parameters['lin_p1'] = linear_solver.state['p1']
-problem.parameters['lin_u'] = linear_solver.state['u']
-problem.parameters['lin_w'] = linear_solver.state['w']
+problem.parameters['a1'] = linear_solver.state['a1']
+problem.parameters['p1'] = linear_solver.state['p1']
+problem.parameters['u1'] = linear_solver.state['u']
+problem.parameters['w1'] = linear_solver.state['w']
 problem.parameters['a0'] = atmos.a0
 problem.parameters['p0'] = atmos.p0
 problem.parameters['a0z'] = atmos.a0z
@@ -43,30 +43,34 @@ problem.parameters['ω'] = param.ω_tide
 problem.parameters['σ'] = param.σ_tide
 problem.parameters['A'] = param.A_tide
 problem.parameters['Lz'] = param.Lz
-problem.substitutions['a1_pert'] = "a1-lin_a1"
-problem.substitutions['p1_pert'] = "p1-lin_p1"
-problem.substitutions['u_pert'] = "u-lin_u"
-problem.substitutions['w_pert'] = "w-lin_w"
 problem.substitutions['a0x'] = '0'
 problem.substitutions['p0x'] = '0'
-problem.substitutions['ux'] = "dx(u)"
-problem.substitutions['wx'] = "dx(w)"
-problem.substitutions['div_u'] = "ux + wz"
-problem.substitutions['txx'] = "μ*(2*ux - 2/3*div_u)"
-problem.substitutions['txz'] = "μ*(wx + uz)"
-problem.substitutions['tzz'] = "μ*(2*wz - 2/3*div_u)"
+problem.substitutions['u1x'] = "dx(u1)"
+problem.substitutions['w1x'] = "dx(w1)"
+problem.substitutions['u2x'] = "dx(u2)"
+problem.substitutions['w2x'] = "dx(w2)"
+problem.substitutions['u1z'] = "dz(u1)"
+problem.substitutions['w1z'] = "dz(w1)"
+problem.substitutions['div_u1'] = "u1x + w1z"
+problem.substitutions['div_u2'] = "u2x + w2z"
+problem.substitutions['t1xx'] = "μ*(2*u1x - 2/3*div_u1)"
+problem.substitutions['t1xz'] = "μ*(w1x + u1z)"
+problem.substitutions['t1zz'] = "μ*(2*w1z - 2/3*div_u1)"
+problem.substitutions['t2xx'] = "μ*(2*u2x - 2/3*div_u2)"
+problem.substitutions['t2xz'] = "μ*(w2x + u2z)"
+problem.substitutions['t2zz'] = "μ*(2*w2z - 2/3*div_u2)"
 problem.substitutions['φ'] = "A*exp(σ*t)*cos(k*x)*exp(k*(z - Lz))"
 problem.substitutions['cs20'] = "γ*p0*a0"
-problem.add_equation("dt(u) + U*ux + a0*dx(p1) + a1*p0x - a0*(dx(txx) + dz(txz)) = - (u*ux + w*uz) - a1*dx(p1) + a1*(dx(txx) + dz(txz)) - dx(φ)")
-problem.add_equation("dt(w) + U*wx + a0*dz(p1) + a1*p0z - a0*(dx(txz) + dz(tzz)) = - (u*wx + w*wz) - a1*dz(p1) + a1*(dx(txz) + dz(tzz)) - dz(φ)")
-problem.add_equation("dt(a1) + U*dx(a1) + u*a0x + w*a0z -   a0*div_u = - (U*a0x + u*dx(a1) + w*dz(a1)) +   a1*div_u")
-problem.add_equation("dt(p1) + U*dx(p1) + u*p0x + w*p0z + γ*p0*div_u = - (U*p0x + u*dx(p1) + w*dz(p1)) - γ*p1*div_u")
-problem.add_equation("uz - dz(u) = 0")
-problem.add_equation("wz - dz(w) = 0")
-problem.add_bc("left(txz) = 0")
-problem.add_bc("right(txz) = 0")
-problem.add_bc("left(w) = 0")
-problem.add_bc("right(w) = 0")
+problem.add_equation("dt(u2) + U*u2x + a0*dx(p2) + a2*p0x - a0*(dx(t2xx) + dz(t2xz)) = - ((u1+u2)*(u1x+u2x) + (w1+w2)*(u1z+u2z)) - (a1+a2)*dx((p1+p2)) + (a1+a2)*(dx(t1xx+t2xx) + dz(t1xz+t2xz))")
+problem.add_equation("dt(w2) + U*w2x + a0*dz(p2) + a2*p0z - a0*(dx(t2xz) + dz(t2zz)) = - ((u1+u2)*(w1x+w2x) + (w1+w2)*(w1z+w2z)) - (a1+a2)*dz((p1+p2)) + (a1+a2)*(dx(t1xz+t2xz) + dz(t1zz+t2zz))")
+problem.add_equation("dt(a2) + U*dx(a2) + u2*a0x + w2*a0z -   a0*div_u2 = - (U*a0x + (u1+u2)*dx((a1+a2)) + (w1+w2)*dz((a1+a2))) +   (a1+a2)*(div_u1+div_u2)")
+problem.add_equation("dt(p2) + U*dx(p2) + u2*p0x + w2*p0z + γ*p0*div_u2 = - (U*p0x + (u1+u2)*dx((p1+p2)) + (w1+w2)*dz((p1+p2))) - γ*(p1+p2)*(div_u1+div_u2)")
+problem.add_equation("u2z - dz(u2) = 0")
+problem.add_equation("w2z - dz(w2) = 0")
+problem.add_bc("left(t2xz) = 0")
+problem.add_bc("right(t2xz) = 0")
+problem.add_bc("left(w2) = 0")
+problem.add_bc("right(w2) = 0")
 
 # Solver
 solver = problem.build_solver(param.ts)
@@ -78,9 +82,6 @@ solver.stop_iteration = param.stop_iteration
 if pathlib.Path('restart.h5').exists():
     write, initial_dt = solver.load_state('restart.h5', -1)
     param.CFL['initial_dt'] = initial_dt
-else:
-    for var in problem.variables:
-        solver.state[var]['c'] = linear_solver.state[var]['c']
 
 # Output
 an0 = solver.evaluator.add_file_handler('data_checkpoints', wall_dt=param.checkpoint_wall_dt, max_writes=1)
@@ -89,25 +90,25 @@ an3 = solver.evaluator.add_file_handler('data_snapshots_coeff', sim_dt=param.sna
 an3.add_system(solver.state, layout='c')
 an1 = solver.evaluator.add_file_handler('data_snapshots', sim_dt=param.snapshot_sim_dt, max_writes=10)
 an1.add_system(solver.state, layout='g')
-an1.add_task('p0+p1', name='p', layout='g')
-an1.add_task('a0+a1', name='a', layout='g')
-an1.add_task('(a0+a1)**(-1)', name='ρ', layout='g')
-an1.add_task('a1 - lin_a1', name='diff_a1', layout='g')
-an1.add_task('p1 - lin_p1', name='diff_p1', layout='g')
-an1.add_task('u - lin_u', name='diff_u', layout='g')
-an1.add_task('w - lin_w', name='diff_w', layout='g')
+an1.add_task('p0+p1+p2', name='p', layout='g')
+an1.add_task('a0+a1+p2', name='a', layout='g')
+an1.add_task('(a0+a1+a2)**(-1)', name='ρ', layout='g')
+an1.add_task('a1+a2', name='diff_a1', layout='g')
+an1.add_task('p1+p2', name='diff_p1', layout='g')
+an1.add_task('u1+u2', name='diff_u', layout='g')
+an1.add_task('w1+w2', name='diff_w', layout='g')
 an2 = solver.evaluator.add_file_handler('data_scalars', sim_dt=param.scalar_sim_dt, max_writes=100)
-an2.add_task('integ((u*u+w*w)/(a0+a1)/2)', name='KE', layout='g')
-an2.add_task('integ((u_pert*u_pert+w_pert*w_pert)/(a0+a1)/2)', name='KE_pert', layout='g')
+an2.add_task('integ(((u1+u2)**2 + (w1+w2)**2) /(a0+a1+a2)/2)', name='KE', layout='g')
+an2.add_task('integ((u2*u2+w2*w2)/(a0+a1+a2)/2)', name='KE_pert', layout='g')
 an2.add_task('-integ(u*dx(txx) + u*dz(txz) + w*dx(txz) + w*dz(tzz))', name='D', layout='g')
 
 # Monitoring
 flow = flow_tools.GlobalFlowProperty(solver, cadence=param.CFL['cadence'])
-flow.add_property('integ((u*u+w*w)/(a0+a1)/2)', name='KE')
+flow.add_property('integ((u2*u2+w2*w2)/(a0+a1+a2)/2)', name='KE_pert')
 
 # CFL calculator
 CFL = flow_tools.CFL(solver, **param.CFL)
-CFL.add_velocities(('u', 'w'))
+CFL.add_velocities(('u1+u2', 'w1+w2'))
 
 # Main loop
 dt_floor = 2**(np.log2(param.CFL['min_dt'])//1)
@@ -120,7 +121,7 @@ try:
         dt = solver.step(dt, trim=param.trim)
         if (solver.iteration-1) % param.CFL['cadence'] == 0:
             logger.info('Iteration: %i, Time: %e, dt: %e' %(solver.iteration, solver.sim_time, dt))
-            logger.info('Ave KE = %e' %flow.max('KE'))
+            logger.info('Ave KE = %e' %flow.max('KE+pert'))
 except:
     logger.error('Exception raised, triggering end of main loop.')
     logger.error('Final timestep: %f' %dt)
