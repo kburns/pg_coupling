@@ -7,17 +7,19 @@ import pickle
 from scipy.linalg import eig
 from dedalus.tools.sparse import scipy_sparse_eigs
 import dedalus.public as de
+import os
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 def filename(param, krel):
-    return "emodes/emodes_%i_%.1f.pkl" %(param.Nz, krel)
+    return "emodes_mu_%.1e/emodes_%i_%.1f.pkl" %(param.μ, param.Nz, krel)
 
 
 def save_modes(param, krel, verbose=True):
     """Compute and save eigenmodes."""
+    os.makedirs(os.path.dirname(filename(param, krel)), exist_ok=True)
     if verbose:
         print("Saving modes krel=%.1f" %krel)
     logging.disable(logging.INFO)
