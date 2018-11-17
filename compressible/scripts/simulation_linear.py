@@ -62,10 +62,10 @@ problem.substitutions['t2xz'] = "μ*(w2x + u2z)"
 problem.substitutions['t2zz'] = "μ*(2*w2z - 2/3*div_u2)"
 problem.substitutions['φ'] = "A*exp(σ*t)*cos(k*x)*exp(k*(z - Lz))"
 problem.substitutions['cs20'] = "γ*p0*a0"
-problem.add_equation("dt(u2) + U*u2x + a0*dx(p2) + a2*p0x - a0*(dx(t2xx) + dz(t2xz)) = - ((u1+u2)*(u1x+u2x) + (w1+w2)*(u1z+u2z)) - (a1+a2)*dx((p1+p2)) + (a1+a2)*(dx(t1xx+t2xx) + dz(t1xz+t2xz))")
-problem.add_equation("dt(w2) + U*w2x + a0*dz(p2) + a2*p0z - a0*(dx(t2xz) + dz(t2zz)) = - ((u1+u2)*(w1x+w2x) + (w1+w2)*(w1z+w2z)) - (a1+a2)*dz((p1+p2)) + (a1+a2)*(dx(t1xz+t2xz) + dz(t1zz+t2zz))")
-problem.add_equation("dt(a2) + U*dx(a2) + u2*a0x + w2*a0z -   a0*div_u2 = - (U*a0x + (u1+u2)*dx((a1+a2)) + (w1+w2)*dz((a1+a2))) +   (a1+a2)*(div_u1+div_u2)")
-problem.add_equation("dt(p2) + U*dx(p2) + u2*p0x + w2*p0z + γ*p0*div_u2 = - (U*p0x + (u1+u2)*dx((p1+p2)) + (w1+w2)*dz((p1+p2))) - γ*(p1+p2)*(div_u1+div_u2)")
+problem.add_equation("dt(u2) + U*u2x + a0*dx(p2) + a2*p0x - a0*(dx(t2xx) + dz(t2xz)) = - ((u1)*(u2x) + (u2)*(u1x) + (w1)*(u2z) + (w2)*(u1z)) - (a1)*dx(p2) - (a2)*dx(p1) + (a1)*(dx(t2xx) + dz(t2xz)) + (a2)*(dx(t1xx) + dz(t1xz))")
+problem.add_equation("dt(w2) + U*w2x + a0*dz(p2) + a2*p0z - a0*(dx(t2xz) + dz(t2zz)) = - ((u1)*(w2x) + (u2)*(w1x) + (w1)*(w2z) + (w2)*(w1z)) - (a1)*dz(p2) - (a2)*dz(p1) + (a1)*(dx(t2xz) + dz(t2zz)) + (a2)*(dx(t1xz) + dz(t1zz))")
+problem.add_equation("dt(a2) + U*dx(a2) + u2*a0x + w2*a0z -   a0*div_u2 = - (U*a0x + (u1)*dx(a2) + (u2)*dx(a1) + (w1)*dz(a2) + (w2)*dz(a1)) +   (a1)*(div_u2) +   (a2)*(div_u1)")
+problem.add_equation("dt(p2) + U*dx(p2) + u2*p0x + w2*p0z + γ*p0*div_u2 = - (U*p0x + (u1)*dx(p2) + (u2)*dx(p1) + (w1)*dz(p2) + (w2)*dz(p1)) - γ*(p1)*(div_u2) - γ*(p2)*(div_u1)")
 problem.add_equation("u2z - dz(u2) = 0")
 problem.add_equation("w2z - dz(w2) = 0")
 problem.add_bc("left(t2xz) = 0")
@@ -80,9 +80,33 @@ solver.stop_wall_time = param.stop_wall_time
 solver.stop_iteration = param.stop_iteration
 
 # Initial conditions
+def random_field_2d(domain, sigma):
+    Lx = domain.bases[0].interval[1] - domain.bases[0].interval[0]
+    Ly = domain.bases[1].interval[1] - domain.bases[0].interval[0]
+    # Wavenumber arrays
+    kx = domain.elements(0)
+    ky = domain.elements(1)
+    k2 = kx**2 + ky**2
+    # Mode amplitudes
+    a = 1 / 2 / sigma**2
+    b = 1 / 4 / a
+    A = np.pi / Lx / Ly / a
+    Ck = np.exp(-b*k2)
+    amp = (A * Ck)**0.5
+    # Random field
+    u = domain.new_field()
+    rand = (np.random.randn(*u['c'].shape) + 1j*np.random.randn(*u['c'].shape)) / np.sqrt(2)
+    u['c'] = rand * amp
+    # Real projection
+    u['g']
+    return u
+
 if pathlib.Path('restart.h5').exists():
     write, initial_dt = solver.load_state('restart.h5', -1)
     param.CFL['initial_dt'] = initial_dt
+else:
+    for var in problem.variables:
+        solver.state[var]['g'] = random_field_2d(domain, sigma=0.1)['g']
 
 # Output
 an0 = solver.evaluator.add_file_handler('data_checkpoints', wall_dt=param.checkpoint_wall_dt, max_writes=1)
@@ -99,17 +123,18 @@ an1.add_task('p1+p2', name='diff_p1', layout='g')
 an1.add_task('u1+u2', name='diff_u', layout='g')
 an1.add_task('w1+w2', name='diff_w', layout='g')
 an2 = solver.evaluator.add_file_handler('data_scalars', sim_dt=param.scalar_sim_dt, max_writes=100)
-an2.add_task('integ(((u1+u2)**2 + (w1+w2)**2) /(a0+a1+a2)/2)', name='KE', layout='g')
-an2.add_task('integ((u2*u2+w2*w2)/(a0+a1+a2)/2)', name='KE_pert', layout='g')
+an2.add_task('integ(((u1+u2)**2 + (w1+w2)**2) /(a0+a1)/2)', name='KE', layout='g')
+an2.add_task('integ((u2*u2+w2*w2)/(a0+a1)/2)', name='KE_pert', layout='g')
 an2.add_task('-integ(u2*dx(t2xx) + u2*dz(t2xz) + w2*dx(t2xz) + w2*dz(t2zz))', name='D', layout='g')
 
 # Monitoring
 flow = flow_tools.GlobalFlowProperty(solver, cadence=param.CFL['cadence'])
-flow.add_property('integ((u2*u2+w2*w2)/(a0+a1+a2)/2)', name='KE_pert')
+flow.add_property('integ((u2*u2+w2*w2)/(a0+a1)/2)', name='KE_pert')
 
 # CFL calculator
 CFL = flow_tools.CFL(solver, **param.CFL)
-CFL.add_velocities(('u1+u2', 'w1+w2'))
+CFL.add_velocity('U', axis=0)
+CFL.add_velocities(('u1', 'w1'))
 
 # Main loop
 dt_floor = 2**(np.log2(param.CFL['min_dt'])//1)

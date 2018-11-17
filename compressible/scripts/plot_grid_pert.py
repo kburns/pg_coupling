@@ -5,7 +5,7 @@ Usage:
     plot_2d_series.py <files>... [--output=<dir>]
 
 Options:
-    --output=<dir>  Output directory [default: ./frames_coeffs]
+    --output=<dir>  Output directory [default: ./frames_grid]
 
 """
 
@@ -23,19 +23,16 @@ def main(filename, start, count, output):
     """Save plot of specified tasks for given range of analysis writes."""
 
     # Plot settings
-    tasks = ['a2', 'p2', 'u2', 'w2']
+    tasks = ['a2', 'p2', 'u2', 'w2', 'diff_a1', 'diff_p1', 'diff_u', 'diff_w']
     scale = 2.5
     dpi = 100
     title_func = lambda sim_time: 't = {:.3f}'.format(sim_time)
     savename_func = lambda write: 'write_{:06}.png'.format(write)
     # Layout
-    nrows, ncols = 1, 4
-    image = plot_tools.Box(1, 2)
+    nrows, ncols = 2, 4
+    image = plot_tools.Box(2, 1)
     pad = plot_tools.Frame(0.2, 0.2, 0.1, 0.1)
     margin = plot_tools.Frame(0.3, 0.2, 0.1, 0.1)
-
-    def logmag(xmesh, ymesh, data):
-        return xmesh, ymesh, np.log10(np.abs(data))
 
     # Create multifigure
     mfig = plot_tools.MultiFigure(nrows, ncols, image, pad, margin, scale)
@@ -49,7 +46,7 @@ def main(filename, start, count, output):
                 axes = mfig.add_axes(i, j, [0, 0, 1, 1])
                 # Call 3D plotting helper, slicing in time
                 dset = file['tasks'][task]
-                plot_tools.plot_bot_3d(dset, 0, index, axes=axes, title=task, func=logmag, cmap='viridis')
+                plot_tools.plot_bot_3d(dset, 0, index, axes=axes, title=task, even_scale=True)
             # Add time title
             title = title_func(file['scales/sim_time'][index])
             title_height = 1 - 0.5 * mfig.margin.top / mfig.fig.y

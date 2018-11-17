@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Solve 2d linear problem
 atmos, linear_problem = tides.linear_tide_2d(param)
+domain = atmos.domain
 linear_solver = linear_problem.build_solver()
 linear_solver.solve()
 
