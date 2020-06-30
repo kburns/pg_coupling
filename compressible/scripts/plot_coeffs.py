@@ -23,7 +23,7 @@ def main(filename, start, count, output):
     """Save plot of specified tasks for given range of analysis writes."""
 
     # Plot settings
-    tasks = ['a2', 'p2', 'u2', 'w2']
+    tasks = ['a1', 'p1', 'u', 'w']
     scale = 2.5
     dpi = 100
     title_func = lambda sim_time: 't = {:.3f}'.format(sim_time)
@@ -49,7 +49,7 @@ def main(filename, start, count, output):
                 axes = mfig.add_axes(i, j, [0, 0, 1, 1])
                 # Call 3D plotting helper, slicing in time
                 dset = file['tasks'][task]
-                plot_tools.plot_bot_3d(dset, 0, index, axes=axes, title=task, func=logmag, cmap='viridis')
+                plot_tools.plot_bot_3d(dset, 0, index, axes=axes, title=task, func=logmag, clim=(-25, 0), cmap='viridis')
             # Add time title
             title = title_func(file['scales/sim_time'][index])
             title_height = 1 - 0.5 * mfig.margin.top / mfig.fig.y

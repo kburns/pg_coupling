@@ -54,7 +54,7 @@ def main(filename, krel, N, target, output):
     kx = krel * param.k_tide
 
     # Project modes
-    evals, projector = modes.compute_eigenmodes(param, kx, N=N, target=target)
+    evals, evecs, adj_evals, edj_evecs, projector = modes.compute_eigenmodes(param, kx, N=N, target=target)
     sim_time, data = load_state_vectors(filename, kx)
     mode_amplitudes = data @ projector.T
 

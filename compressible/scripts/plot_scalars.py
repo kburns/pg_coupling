@@ -21,27 +21,25 @@ def main(filename, output):
     """Plot scalar time-series."""
 
     # Data selection
-    tasks = ['KE', 'KE_pert', 'D']
+    tasks = ['KE', 'D']
     slices = (slice(None), 0, 0)
 
     # Plot tasks
-    fig, axes = plt.subplots(len(tasks), 2, figsize=(10,8))
+    fig, axes = plt.subplots(len(tasks), 1, figsize=(10,8))
     if len(tasks) == 1:
         axes = [axes]
 
     with h5py.File(filename, mode='r') as file:
         sim_time = file['scales']['sim_time'][:]
-        for i, task in enumerate(tasks):
-            if task in file['tasks']:
+        for task, ax in zip(tasks, axes):
+            if task in file['tasks']:            
                 dset = file['tasks'][task]
-                ax = axes[i][0]
-                ax.semilogy(sim_time[slices[0]], dset[slices], '.-')
+                px = sim_time[slices[0]]
+                py = dset[slices]
+                ax.plot(px[py>0], py[py>0], 'o-')
+                ax.plot(px[py<0], -py[py<0], '.-')
+                ax.set_yscale('log')
                 ax.set_ylabel(task)
-                ax.grid()
-                ax = axes[i][1]
-                ax.plot(sim_time[slices[0]], dset[slices], '.-')
-                ax.set_ylabel(task)
-                ax.grid()
         ax.set_xlabel('sim time')
 
     # Finalize figure
