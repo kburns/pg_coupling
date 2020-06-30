@@ -27,7 +27,7 @@ def save_modes(param, krel, verbose=True):
     logging.disable(logging.NOTSET)
     # Drop solver/pencil object references
     eigenmodes = eigenmodes[:5]
-    pickle.dump(eigenmodes, open(filename(param, krel), "wb"))
+    pickle.dump(eigenmodes, open(filename(param, krel), "wb"), protocol=-1)
     return eigenmodes
 
 
@@ -44,7 +44,8 @@ def get_modes(param, krel_list, force=False, verbose=True):
     for krel in krel_list:
         if force or (not pathlib.Path(filename(param, krel)).exists()):
             eigenmodes[krel] = save_modes(param, krel, verbose=verbose)
-        eigenmodes[krel] = load_modes(param, krel, verbose=verbose)
+        else:
+            eigenmodes[krel] = load_modes(param, krel, verbose=verbose)
     return eigenmodes
 
 
