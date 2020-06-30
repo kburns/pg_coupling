@@ -23,6 +23,7 @@ atmos, linear_problem = tides.linear_tide_2d(param)
 domain = atmos.domain
 linear_solver = linear_problem.build_solver()
 linear_solver.solve()
+np.seterr(all='raise')
 
 # Adiabatic viscous fully-compressible hydrodynamics
 problem = de.IVP(atmos.domain, variables=['a1','p1','u','w','uz','wz'],
@@ -122,6 +123,9 @@ try:
         if (solver.iteration-1) % param.CFL['cadence'] == 0:
             logger.info('Iteration: %i, Time: %e, dt: %e' %(solver.iteration, solver.sim_time, dt))
             logger.info('Ave KE = %e' %flow.max('KE'))
+        if (solver.iteration+1) % 100 == 0:
+            for fn in problem.variables:
+                solver.state[fn].require_grid_space()
 except:
     logger.error('Exception raised, triggering end of main loop.')
     logger.error('Final timestep: %f' %dt)
